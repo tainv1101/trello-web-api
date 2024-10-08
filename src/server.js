@@ -1,32 +1,46 @@
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
+import express from 'express';
+import exitHook from 'async-exit-hook';
+import { connectDB, getDB, closeDB } from '~/config/mongodb';
+import { env } from '~/config/environment';
+import { APIs_V1 } from '~/routes/v1';
+import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware';
+import { StatusCodes } from 'http-status-codes';
 
-import express from 'express'
-import { mapOrder } from '~/utils/sorts.js'
+const START_SERVER = () => {
+  const app = express();
 
-const app = express()
+  // cho pheps body sử dụng json data
+  app.use(express.json());
+  // Khi truy cập đúng tuyến đường thì code trong route sẽ chạy, giống route trong reactjs
+  // use này giống à tao chạy code thằng này nè và thêm cái path ở đầu nữa
+  app.use('/v1', APIs_V1);
 
-const hostname = 'localhost'
-const port = 8017
+  app.get('/', (req, res) => {
+    res.end('<h1>Hello World!</h1><hr>');
+  });
 
-app.get('/', (req, res) => {
-  // Test Absolute import mapOrder
-  console.log(mapOrder(
-    [ { id: 'id-1', name: 'One' },
-      { id: 'id-2', name: 'Two' },
-      { id: 'id-3', name: 'Three' },
-      { id: 'id-4', name: 'Four' },
-      { id: 'id-5', name: 'Five' } ],
-    ['id-5', 'id-4', 'id-2', 'id-3', 'id-1'],
-    'id'
-  ))
-  res.end('<h1>Hello World!</h1><hr>')
-})
+  // Error Handler xử lý lỗi tập trung, tất cả các lỗi
+  app.use(errorHandlingMiddleware);
 
-app.listen(port, hostname, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Hello Trung Quan Dev, I am running at ${ hostname }:${ port }/`)
-})
+  app.listen(env.APP_PORT, env.APP_HOST, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Hello Trung Quan Dev, I am running at ${ env.APP_HOST }:${ env.APP_PORT }/`);
+  });
+
+  exitHook(() => {
+    closeDB();
+  });
+};
+
+connectDB()
+  .then(() => {
+    console.log('Kết nối thành công ^^');
+  })
+  .then(() => {
+    START_SERVER();
+  })
+  .catch((erorr) => {
+    console.log(erorr);
+    process.exit(0);
+  });
+
